@@ -16,28 +16,51 @@ options(shiny.maxRequestSize=100*1024^2)
 shinyServer(function(input, output) {
   # update dropdown menus based on user input expression data
   output$myMenu <- renderUI({
-    if (is.null(input$inputFile))
+    if (is.null(input$expFile) || is.null(input$clustFile))
       return()
     myGenes <- getGeneList()
+    myClusters <- getClusterList()
     return(wellPanel(selectInput(inputId="gene", 
                           label="Gene", 
                           choices=myGenes),
               selectInput(inputId="condition",
                           label="Condition",
-                          choices=c("Ctrl","Diabetes")))
+                          choices=myClusters))
     )
   })
   # check if file is uploaded
   output$fileUploaded <- reactive({
-    return(!is.null(getExpData()))
+    return(!is.null(mergeData()))
   })
   outputOptions(output, "fileUploaded", suspendWhenHidden=FALSE)
   # load expression data if available
   getExpData <- reactive({
-    inputFile <- input$inputFile
-    if (is.null(inputFile))
+    expFile <- input$expFile
+    if (is.null(expFile))
       return(NULL)
-    return(read.table(inputFile$datapath, header=T, check.names=F, row.names=1, sep="\t"))
+    return(read.table(expFile$datapath, header=T, check.names=F, row.names=1, sep="\t"))
+  })
+  # load cluster info data if available
+  getClustData <- reactive({
+    clustFile <- input$clustFile
+    if (is.null(clustFile))
+      return(NULL)
+    return(read.table(clustFile$datapath, header=T, check.names=F, row.names=1, sep="\t"))
+  })
+  # merge expression data with clust info data
+  mergeData <- reactive({
+    # get expression data
+    expData <- getExpData()
+    if (is.null(expData))
+      return(NULL)
+    # get clust info data
+    clustData <- getClustData()
+    if (is.null(clustData))
+      return(NULL)
+    # merge two tables
+    combinedData <- merge(t(expData), clustData, by=0, all=T)
+    rownames(combinedData) <- combinedData$Row.names
+    return(combinedData <- combinedData[,-1])
   })
   # load available genes
   getGeneList <- reactive({
@@ -46,6 +69,14 @@ shinyServer(function(input, output) {
     if (is.null(expData))
       return(NULL)
     return(rownames(expData))
+  })
+  # load clusters
+  getClusterList <- reactive({
+    # get clust info data
+    clustData <- getClustData()
+    if (is.null(clustData))
+      return(NULL)
+    return(unique(clustData$ident))
   })
   # output$distPlot <- renderPlot({
   #   

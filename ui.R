@@ -31,9 +31,11 @@ shinyUI(fluidPage(
     # Bottom bar with file uploader and parameter selectors 
     fluidRow(
       column(4,
-             wellPanel(fileInput(inputId="inputFile",
-                                 label="upload expression table:",
-                                 multiple=F)
+             wellPanel(fileInput(inputId="expFile",
+                                 label="upload expression data:",
+                                 multiple=F),
+                       fileInput(inputId="clustFile",
+                                 label="upload cluster data:", multiple=F)
              )
       ),
       column(4,
