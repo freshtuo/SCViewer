@@ -22,10 +22,13 @@ shinyServer(function(input, output) {
     myClusters <- getClusterList()
     return(wellPanel(selectInput(inputId="gene", 
                           label="Gene", 
-                          choices=myGenes),
-              selectInput(inputId="condition",
-                          label="Condition",
-                          choices=myClusters))
+                          choices=myGenes,
+                          selected=intersect(c("Gapdh","GAPDH"),myGenes)),
+              selectInput(inputId="cluster",
+                          label="Cluster",
+                          choices=myClusters),
+                          selected="All"
+              )
     )
   })
   # check if file is uploaded
@@ -60,7 +63,8 @@ shinyServer(function(input, output) {
     # merge two tables
     combinedData <- merge(t(expData), clustData, by=0, all=T)
     rownames(combinedData) <- combinedData$Row.names
-    return(combinedData <- combinedData[,-1])
+    ##combinedData <- combinedData[,-1]
+    return(combinedData)
   })
   # load available genes
   getGeneList <- reactive({
@@ -76,7 +80,80 @@ shinyServer(function(input, output) {
     clustData <- getClustData()
     if (is.null(clustData))
       return(NULL)
-    return(unique(clustData$ident))
+    return(c("All",unique(as.vector(clustData$ident))))
+  })
+  # get selected gene
+  getGene <- reactive({
+    # get gene list
+    myGenes <- getGeneList()
+    if (is.null(myGenes))
+      return(NULL)
+    if (is.null(input$gene))
+      return(intersect(c("Gapdh","GAPDH"),myGenes))
+    return(input$gene)
+  })
+  # extract data columns for plotting
+  prepareData <- reactive({
+    # get combined data table
+    combinedData <- mergeData()
+    if (is.null(combinedData))
+      return(NULL)
+    # get current selected gene
+    curGene <- getGene()
+    # extract needed columns
+    dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2",curGene)]
+    colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","gene")
+    return(dataToPlot)
+  })
+  # draw reference tSNE plot
+  output$tsneRef <- renderPlot({
+    # get data for plotting
+    dataToPlot <- prepareData()
+    if (is.null(dataToPlot))
+      return(NULL)
+    # draw reference tSNE plot
+    g <- ggplot(dataToPlot, aes(x=tSNE_1,y=tSNE_2,color=ident))
+    g <- g + geom_point(shape=19, size=3, alpha=.8)
+    g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
+    g <- g + theme(legend.justification=c(0,0), legend.title=element_blank())
+    return(g)
+  })
+  # get expression upperbound
+  getMaxExp <- reactive({
+    # get data for plotting
+    dataToPlot <- prepareData()
+    if (is.null(dataToPlot))
+      return(NULL)
+    # find upperbound and round up
+    maxexp <- max(dataToPlot$gene)
+    roundexp <- round(maxexp)
+    up <- ceiling(maxexp)
+    bottom <- floor(maxexp)
+    hcut <- bottom + 0.5
+    if(roundexp == up){
+      # > .5
+      hcut <- up
+    }
+    return(hcut)
+  })
+  # draw expression tSNE plot
+  output$tsneExp <- renderPlot({
+    # get data for plotting
+    dataToPlot <- prepareData()
+    if (is.null(dataToPlot))
+      return(NULL)
+    # get expression upperbound
+    hcut <- getMaxExp()
+    # draw expression tSNE plot
+    g <- ggplot(dataToPlot, aes(x=tSNE_1,y=tSNE_2,color=gene))
+    g <- g + geom_point(shape=19, size=3, alpha=.8)
+    #g <- g + coord_cartesian(xlim=c(-40, 35), ylim=c(-45,35))
+    g <- g + scale_color_gradient(low="grey", high="red", limits=c(0,hcut))
+    g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
+    g <- g + theme(legend.justification=c(0,0), legend.title=element_blank())
+    g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=18))
+    g <- g + theme(axis.text=element_text(size=24), axis.title=element_text(size=26,face="bold"))
+    return(g)
   })
   # output$distPlot <- renderPlot({
   #   

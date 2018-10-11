@@ -16,13 +16,11 @@ shinyUI(fluidPage(
     titlePanel("Single Cell Data Viewer"),
     
     tabsetPanel(type="tabs",
-                #tabPanel(title="tSNE", plotOutput("plot")),
-                tabPanel(title="tSNE"),
+                tabPanel(title="tSNE", fluidRow(column(6,plotOutput("tsneExp")),
+                                                column(6,plotOutput("tsneRef")))),
                 tabPanel(title="Bar"),
                 tabPanel(title="Violin"),
-                tabPanel(title="About",
-                         value=fluidRow(column(6, h3("Contact")),
-                                        column(6, "test"))
+                tabPanel(title="About", h4("This panel is intentionally left blank"), h3("test"))
                 )
     ),
 
@@ -46,4 +44,4 @@ shinyUI(fluidPage(
       )
     )
   )
-))
+)
