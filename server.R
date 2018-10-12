@@ -20,16 +20,23 @@ shinyServer(function(input, output) {
       return()
     myGenes <- getGeneList()
     myClusters <- getClusterList()
+    myConditions <- getNonNumericCols()
     return(wellPanel(selectInput(inputId="gene", 
-                          label="Gene", 
-                          choices=myGenes,
-                          selected=intersect(c("Gapdh","GAPDH"),myGenes)),
-              selectInput(inputId="cluster",
-                          label="Cluster",
-                          choices=c("All",myClusters)),
-                          selected="All"
-              )
-    )
+                                 label="Gene",
+                                 choices=myGenes,
+                                 selected=intersect(c("Gapdh","GAPDH"),myGenes)
+                    ),
+                    selectInput(inputId="cluster",
+                                label="Cluster",
+                                choices=c("All",myClusters),
+                                selected="All"
+                    ),
+                    selectInput(inputId="condition",
+                                label="Condition",
+                                choices=c("None",myConditions),
+                                selected="None"
+                    )
+    ))
   })
   # check if file is uploaded
   output$fileUploaded <- reactive({
@@ -103,6 +110,27 @@ shinyServer(function(input, output) {
     else
       return(input$cluster)
   })
+  # fetch current selected condition
+  getCondition <- reactive({
+    # get condition name list
+    myConditions <- getNonNumericCols()
+    if (is.null(myConditions))
+      return(NULL)
+    if (is.null(input$condition))
+      return("None")
+    return(input$condition)
+  })
+  # extract non-numeric columns
+  getNonNumericCols <- reactive({
+    # get combined data table
+    combinedData <- mergeData()
+    if (is.null(combinedData))
+      return(NULL)
+    # get non-numeric columns
+    selCols <- colnames(combinedData)[!sapply(combinedData, is.numeric)]
+    # remove columns "ident", "orig.ident"
+    return(selcols[!selcols %in% c("ident","orig.ident")])
+  })
   # extract data columns for plotting
   prepareData <- reactive({
     # get combined data table
@@ -111,9 +139,17 @@ shinyServer(function(input, output) {
       return(NULL)
     # get current selected gene
     curGene <- getGene()
+    # get current selected condition column name
+    curCondition <- getCondition()
     # extract needed columns
-    dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2",curGene)]
-    colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","gene")
+    if (curCondition != "None"){
+      dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2",curGene,curCondition)]
+      colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","gene","condition")
+    }
+    else{
+      dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2",curGene)]
+      colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","gene")
+    }
     return(dataToPlot)
   })
   # get expression upperbound
@@ -208,6 +244,35 @@ shinyServer(function(input, output) {
     g <- g + theme(legend.justification=c(0,0), legend.title=element_blank())
     g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=18))
     g <- g + theme(axis.text=element_text(size=24), axis.title=element_text(size=26,face="bold"))
+    return(g)
+  })
+  # draw expression bar plot
+  output$barExp <- renderPlot({
+    # get data for plotting
+    dataToPlot <- prepareData()
+    if (is.null(dataToPlot))
+      return(NULL)
+    # get current selected condition
+    curCondition <- getCondition()
+    # create a new column by combining the "ident" column and the selected condition column
+    if (curCondition != "None")
+      dataToPlot$cohort <- paste(dataToPlot$ident, dataToPlot$condition, sep=" - ")
+    else
+      dataToPlot$cohort <- dataToPlot$ident
+    # order cells by cohort column
+    dataToPlotOrdered <- dataToPlot[with(dataToPlot,order(cohort)),]
+    dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort)
+    ##dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort, levels=c("Endothelial cells - None","Endothelial cells - Diabetes","Mesangial cells - None","Mesangial cells - Diabetes","Podocyte - None","Podocyte - Diabetes","Immune cells - None","Immune cells - Diabetes","Tubular cells - None","Tubular cells - Diabetes"))
+    # generate plot
+    g <- ggplot(dataToPlotOrdered, aes(x=cellId, y=gene, fill=ident)) + geom_bar(stat="identity")
+    g <- g + facet_grid(. ~ cohort, scales="free_x", space="free_x", switch="x")
+    g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank(), legend.justification=c(0,0), legend.title=element_blank())
+    g <- g + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+    g <- g + theme(strip.background=element_rect(color="white", fill=NA), panel.border=element_rect(color="lightgray", fill=NA))
+    g <- g + theme(axis.line = element_line(color = "black")) + theme(strip.text.x = element_text(angle = 90))
+    g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=12)) + theme(axis.text=element_text(size=18), axis.title=element_text(size=18,face="bold"))
+    g <- g + ggtitle(paste(gene,"expression per cell",sep=" - ")) + theme(plot.title = element_text(size=14, face="bold", hjust = 0.5))
+    g <- g + ylab("Expression (log-scale)") + theme(axis.title=element_text(size=12,face="bold"),axis.title.x=element_blank(),axis.line.x=element_blank())
     return(g)
   })
   # output$distPlot <- renderPlot({

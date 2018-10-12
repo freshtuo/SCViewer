@@ -18,7 +18,7 @@ shinyUI(fluidPage(
     tabsetPanel(type="tabs",
                 tabPanel(title="tSNE", fluidRow(column(6,plotOutput("tsneExp")),
                                                 column(6,plotOutput("tsneRef")))),
-                tabPanel(title="Bar"),
+                tabPanel(title="Bar", plotOutput("barExp")),
                 tabPanel(title="Violin"),
                 tabPanel(title="About", h4("This panel is intentionally left blank"), h3("test"))
                 )
