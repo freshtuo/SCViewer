@@ -40,7 +40,8 @@ shinyUI(fluidPage(
              conditionalPanel(condition="output.fileUploaded", uiOutput("myMenu"))
       ),
       column(4,
-             h3("Test")
+             ##h3("Test")
+             uiOutput("myDescription")
       )
     )
   )

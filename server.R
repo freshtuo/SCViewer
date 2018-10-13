@@ -52,11 +52,31 @@ shinyServer(function(input, output) {
   output$fileUploaded <- reactive({
     return(!is.null(mergeData()))
   })
+  outputOptions(output, "fileUploaded", suspendWhenHidden=FALSE)
   # track the current tab selection
   #observe({
   #  print(input$tab)
   #})
-  outputOptions(output, "fileUploaded", suspendWhenHidden=FALSE)
+  # update descriptions based on current selected tab
+  output$myDescription <- renderUI({
+    if (input$tab == "tSNE")
+      return(wellPanel(helpText("t-SNE plots showing different types of cells (right)",
+                                "and highlighting expressions of a given gene (left).",br(),
+                                "User can choose a gene and show its expression in cells of a given cell type.")))
+    else if (input$tab == "Bar")
+      return(wellPanel(helpText("Bar plot showing per-cell expressions.",
+                                "Each bar represents a cell and its height indicates expression.",br(),
+                                "By default, cells are grouped according to cell type clusters.",br(),
+                                "User can choose an additional condition factor based on which",
+                                "cells will be arranged in refined groups.")))
+    else if (input$tab == "Violin")
+      return(wellPanel(helpText("Violin plot showing expression distribution within a cell group.",br(),
+                                "By default, cells are grouped according to cell type clusters.",br(),
+                                "User can choose an additional condition factor based on which",
+                                "cells will be arranged in refined groups.")))
+    else
+      return()
+  })
   # load expression data if available
   getExpData <- reactive({
     expFile <- input$expFile
