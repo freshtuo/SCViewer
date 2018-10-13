@@ -3,6 +3,6 @@ single cell data viewer
 
 developed using Shiny app.
 
-screenshots/tSNE_tab.png
-screenshots/bar_tab.png
-screenshots/violin_tab.png
+[tSNE panel](screenshots/tSNE_tab.png)
+[bar panel](screenshots/bar_tab.png)
+[violin panel](screenshots/violin_tab.png)
