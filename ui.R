@@ -22,7 +22,7 @@ shinyUI(fluidPage(
                 tabPanel(title="Violin", plotOutput("violinExp")),
                 tabPanel(title="About", 
                          h4("Thank you for using Single Cell Data Viewer!"),
-                         HTML('Please address questions and comments to <a href="mailto:freshtuo@gmail.com" >Tuo Zhang</a>.'))
+                         HTML('Please address questions and comments to <a href="mailto:taz2008@med.cornell.edu" >Tuo Zhang</a>.'))
                 )
     ),
 
