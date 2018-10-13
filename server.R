@@ -162,9 +162,19 @@ shinyServer(function(input, output) {
     if (is.null(dataToPlot))
       return(NULL)
     # order by cohort
-    dataToPlotOrdered <- dataToPlot[with(dataToPlot,order(cohort)),]
+    dataToPlotOrdered <- dataToPlot[with(dataToPlot, order(cohort)),]
     dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort)
     ##dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort, levels=c("Endothelial cells - None","Endothelial cells - Diabetes","Mesangial cells - None","Mesangial cells - Diabetes","Podocyte - None","Podocyte - Diabetes","Immune cells - None","Immune cells - Diabetes","Tubular cells - None","Tubular cells - Diabetes"))
+    return(dataToPlotOrdered)
+  })
+  # order dataToPlot by gene expression (for tSNE)
+  orderDataByExpression <- reactive({
+    # get data for plotting
+    dataToPlot <- prepareData()
+    if (is.null(dataToPlot))
+      return(NULL)
+    # order by cohort
+    dataToPlotOrdered <- dataToPlot[with(dataToPlot, order(gene)),]
     return(dataToPlotOrdered)
   })
   # get expression upperbound
@@ -214,9 +224,9 @@ shinyServer(function(input, output) {
   })
   # draw reference tSNE plot
   output$tsneRef <- renderPlot({
-    # get data for plotting
-    dataToPlot <- prepareData()
-    if (is.null(dataToPlot))
+    # get ordered data for plotting
+    dataToPlotOrdered <- orderDataByExpression()
+    if (is.null(dataToPlotOrdered))
       return(NULL)
     # get axis range
     axis.range <- getAxisRange()
@@ -227,7 +237,7 @@ shinyServer(function(input, output) {
     # get current selected cluster
     curCluster <- getCluster()
     # draw reference tSNE plot
-    g <- ggplot(dataToPlot[dataToPlot$ident %in% curCluster, ], aes(x=tSNE_1,y=tSNE_2,color=ident))
+    g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=tSNE_1,y=tSNE_2,color=ident))
     g <- g + geom_point(shape=19, size=3, alpha=.8)
     g <- g + coord_cartesian(xlim=c(lower.x, upper.x), ylim=c(lower.y, upper.y))
     g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
@@ -236,9 +246,9 @@ shinyServer(function(input, output) {
   })
   # draw expression tSNE plot
   output$tsneExp <- renderPlot({
-    # get data for plotting
-    dataToPlot <- prepareData()
-    if (is.null(dataToPlot))
+    # get ordered data for plotting
+    dataToPlotOrdered <- orderDataByExpression()
+    if (is.null(dataToPlotOrdered))
       return(NULL)
     # get expression upperbound
     hcut <- getMaxExp()
@@ -251,7 +261,7 @@ shinyServer(function(input, output) {
     # get current selected cluster
     curCluster <- getCluster()
     # draw expression tSNE plot
-    g <- ggplot(dataToPlot[dataToPlot$ident %in% curCluster, ], aes(x=tSNE_1,y=tSNE_2,color=gene))
+    g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=tSNE_1,y=tSNE_2,color=gene))
     g <- g + geom_point(shape=19, size=3, alpha=.8)
     g <- g + coord_cartesian(xlim=c(lower.x, upper.x), ylim=c(lower.y, upper.y))
     g <- g + scale_color_gradient(low="grey", high="red", limits=c(0,hcut))
