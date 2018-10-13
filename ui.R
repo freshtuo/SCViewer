@@ -16,8 +16,8 @@ shinyUI(fluidPage(
     titlePanel("Single Cell Data Viewer"),
     
     tabsetPanel(id="tab", type="tabs",
-                tabPanel(title="tSNE", fluidRow(column(6,plotOutput("tsneExp")),
-                                                column(6,plotOutput("tsneRef")))),
+                tabPanel(title="tSNE", fluidRow(column(6,plotOutput("tsneExp", width="95%", height="400px")),
+                                                column(6,plotOutput("tsneRef", width="100%", height="400px")))),
                 tabPanel(title="Bar", plotOutput("barExp")),
                 tabPanel(title="Violin", plotOutput("violinExp")),
                 tabPanel(title="About", 

@@ -275,7 +275,8 @@ shinyServer(function(input, output) {
     g <- g + geom_point(shape=19, size=3, alpha=.8)
     g <- g + coord_cartesian(xlim=c(lower.x, upper.x), ylim=c(lower.y, upper.y))
     g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
-    g <- g + theme(legend.justification=c(0,0), legend.title=element_blank())
+    g <- g + theme(legend.justification=c(0,0), legend.title=element_blank(), legend.text=element_text(size=12))
+    g <- g + theme(axis.text=element_text(size=15), axis.title=element_text(size=16,face="bold"))
     return(g)
   })
   # draw expression tSNE plot
@@ -301,8 +302,8 @@ shinyServer(function(input, output) {
     g <- g + scale_color_gradient(low="grey", high="red", limits=c(0,hcut))
     g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
     g <- g + theme(legend.justification=c(0,0), legend.title=element_blank())
-    g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=18))
-    g <- g + theme(axis.text=element_text(size=24), axis.title=element_text(size=26,face="bold"))
+    g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=15))
+    g <- g + theme(axis.text=element_text(size=15), axis.title=element_text(size=16,face="bold"))
     return(g)
   })
   # draw expression bar plot
@@ -318,10 +319,9 @@ shinyServer(function(input, output) {
     g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank(), legend.justification=c(0,0), legend.title=element_blank())
     g <- g + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
     g <- g + theme(strip.background=element_rect(color="white", fill=NA), panel.border=element_rect(color="lightgray", fill=NA))
-    g <- g + theme(axis.line = element_line(color = "black")) + theme(strip.text.x = element_text(angle = 90))
-    g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=12)) + theme(axis.text=element_text(size=18), axis.title=element_text(size=18,face="bold"))
-    ##g <- g + ggtitle(paste(gene,"expression per cell",sep=" - ")) + theme(plot.title = element_text(size=14, face="bold", hjust = 0.5))
-    g <- g + ylab("Expression (log-scale)") + theme(axis.title=element_text(size=12,face="bold"),axis.title.x=element_blank(),axis.line.x=element_blank())
+    g <- g + theme(axis.line = element_line(color = "black")) + theme(strip.text.x=element_text(angle=90, size=12, face="bold"))
+    g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=10)) + theme(axis.text=element_text(size=15), axis.title=element_text(size=16,face="bold"))
+    g <- g + ylab("Expression (log-scale)") + theme(axis.title.x=element_blank(),axis.line.x=element_blank())
     return(g)
   })
   # draw expression violin plot
@@ -333,10 +333,9 @@ shinyServer(function(input, output) {
     # generate plot
     g <- ggplot(dataToPlotOrdered, aes(x=cohort, y=gene, fill=cohort))
     g <- g + geom_violin() + stat_summary(fun.data="median_hilow", geom="pointrange")
-    g <- g + theme(legend.position="none") + theme(axis.text.x = element_text(angle = 90))
-    g <- g + theme(plot.title=element_text(size=14, face="bold", hjust=0.5))
+    g <- g + theme(legend.position="none") + theme(axis.text.x=element_text(angle=90, size=12, face="bold"))
     g <- g + ylab("Expression (log-scale)") 
-    g <- g + theme(axis.title=element_text(size=12,face="bold"),axis.title.x=element_blank(),axis.text.x=element_text(size=8,face="bold"))
+    g <- g + theme(axis.title=element_text(size=16,face="bold"), axis.text=element_text(size=15), axis.title.x=element_blank())
     return(g)
   })
   # output$distPlot <- renderPlot({
