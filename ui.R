@@ -15,11 +15,11 @@ shinyUI(fluidPage(
     # Application title
     titlePanel("Single Cell Data Viewer"),
     
-    tabsetPanel(type="tabs",
+    tabsetPanel(id="tab", type="tabs",
                 tabPanel(title="tSNE", fluidRow(column(6,plotOutput("tsneExp")),
                                                 column(6,plotOutput("tsneRef")))),
                 tabPanel(title="Bar", plotOutput("barExp")),
-                tabPanel(title="Violin"),
+                tabPanel(title="Violin", plotOutput("violinExp")),
                 tabPanel(title="About", h4("This panel is intentionally left blank"), h3("test"))
                 )
     ),

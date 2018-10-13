@@ -42,6 +42,10 @@ shinyServer(function(input, output) {
   output$fileUploaded <- reactive({
     return(!is.null(mergeData()))
   })
+  # track the current tab selection
+  observe({
+    print(input$tab)
+  })
   outputOptions(output, "fileUploaded", suspendWhenHidden=FALSE)
   # load expression data if available
   getExpData <- reactive({
@@ -288,6 +292,21 @@ shinyServer(function(input, output) {
     g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=12)) + theme(axis.text=element_text(size=18), axis.title=element_text(size=18,face="bold"))
     ##g <- g + ggtitle(paste(gene,"expression per cell",sep=" - ")) + theme(plot.title = element_text(size=14, face="bold", hjust = 0.5))
     g <- g + ylab("Expression (log-scale)") + theme(axis.title=element_text(size=12,face="bold"),axis.title.x=element_blank(),axis.line.x=element_blank())
+    return(g)
+  })
+  # draw expression violin plot
+  output$violinExp <- renderPlot({
+    # get ordered data for plotting
+    dataToPlotOrdered <- orderDataByCohort()
+    if (is.null(dataToPlotOrdered))
+      return(NULL)
+    # generate plot
+    g <- ggplot(dataToPlotOrdered, aes(x=cohort, y=gene, fill=cohort))
+    g <- g + geom_violin() + stat_summary(fun.data="median_hilow", geom="pointrange")
+    g <- g + theme(legend.position="none") + theme(axis.text.x = element_text(angle = 90))
+    g <- g + theme(plot.title=element_text(size=14, face="bold", hjust=0.5))
+    g <- g + ylab("Expression (log-scale)") 
+    g <- g + theme(axis.title=element_text(size=12,face="bold"),axis.title.x=element_blank(),axis.text.x=element_text(size=8,face="bold"))
     return(g)
   })
   # output$distPlot <- renderPlot({
