@@ -129,7 +129,7 @@ shinyServer(function(input, output) {
     # get non-numeric columns
     selCols <- colnames(combinedData)[!sapply(combinedData, is.numeric)]
     # remove columns "ident", "orig.ident"
-    return(selcols[!selcols %in% c("ident","orig.ident")])
+    return(selCols[!selCols %in% c("ident","orig.ident","Row.names")])
   })
   # extract data columns for plotting
   prepareData <- reactive({
@@ -259,19 +259,22 @@ shinyServer(function(input, output) {
       dataToPlot$cohort <- paste(dataToPlot$ident, dataToPlot$condition, sep=" - ")
     else
       dataToPlot$cohort <- dataToPlot$ident
+    ##write.table(dataToPlot, file="/tmp/dataToPlot.txt", quote=F, sep="\t")
     # order cells by cohort column
     dataToPlotOrdered <- dataToPlot[with(dataToPlot,order(cohort)),]
     dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort)
+    ##write.table(dataToPlotOrdered, file="/tmp/dataToPlotOrder.txt", quote=F, sep="\t")
     ##dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort, levels=c("Endothelial cells - None","Endothelial cells - Diabetes","Mesangial cells - None","Mesangial cells - Diabetes","Podocyte - None","Podocyte - Diabetes","Immune cells - None","Immune cells - Diabetes","Tubular cells - None","Tubular cells - Diabetes"))
     # generate plot
-    g <- ggplot(dataToPlotOrdered, aes(x=cellId, y=gene, fill=ident)) + geom_bar(stat="identity")
+    g <- ggplot(dataToPlotOrdered, aes(x=factor(cellID), y=gene, fill=factor(ident)))
+    g <- g + geom_bar(stat="identity")
     g <- g + facet_grid(. ~ cohort, scales="free_x", space="free_x", switch="x")
     g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank(), legend.justification=c(0,0), legend.title=element_blank())
     g <- g + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
     g <- g + theme(strip.background=element_rect(color="white", fill=NA), panel.border=element_rect(color="lightgray", fill=NA))
     g <- g + theme(axis.line = element_line(color = "black")) + theme(strip.text.x = element_text(angle = 90))
     g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=12)) + theme(axis.text=element_text(size=18), axis.title=element_text(size=18,face="bold"))
-    g <- g + ggtitle(paste(gene,"expression per cell",sep=" - ")) + theme(plot.title = element_text(size=14, face="bold", hjust = 0.5))
+    ##g <- g + ggtitle(paste(gene,"expression per cell",sep=" - ")) + theme(plot.title = element_text(size=14, face="bold", hjust = 0.5))
     g <- g + ylab("Expression (log-scale)") + theme(axis.title=element_text(size=12,face="bold"),axis.title.x=element_blank(),axis.line.x=element_blank())
     return(g)
   })
