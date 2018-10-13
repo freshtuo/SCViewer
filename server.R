@@ -155,6 +155,18 @@ shinyServer(function(input, output) {
     }
     return(dataToPlot)
   })
+  # order dataToPlot by cohort (for barplot)
+  orderDataByCohort <- reactive({
+    # get data for plotting
+    dataToPlot <- prepareData()
+    if (is.null(dataToPlot))
+      return(NULL)
+    # order by cohort
+    dataToPlotOrdered <- dataToPlot[with(dataToPlot,order(cohort)),]
+    dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort)
+    ##dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort, levels=c("Endothelial cells - None","Endothelial cells - Diabetes","Mesangial cells - None","Mesangial cells - Diabetes","Podocyte - None","Podocyte - Diabetes","Immune cells - None","Immune cells - Diabetes","Tubular cells - None","Tubular cells - Diabetes"))
+    return(dataToPlotOrdered)
+  })
   # get expression upperbound
   getMaxExp <- reactive({
     # get data for plotting
@@ -251,14 +263,10 @@ shinyServer(function(input, output) {
   })
   # draw expression bar plot
   output$barExp <- renderPlot({
-    # get data for plotting
-    dataToPlot <- prepareData()
-    if (is.null(dataToPlot))
+    # get ordered data for plotting
+    dataToPlotOrdered <- orderDataByCohort()
+    if (is.null(dataToPlotOrdered))
       return(NULL)
-    # order cells by cohort column
-    dataToPlotOrdered <- dataToPlot[with(dataToPlot,order(cohort)),]
-    dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort)
-    ##dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort, levels=c("Endothelial cells - None","Endothelial cells - Diabetes","Mesangial cells - None","Mesangial cells - Diabetes","Podocyte - None","Podocyte - Diabetes","Immune cells - None","Immune cells - Diabetes","Tubular cells - None","Tubular cells - Diabetes"))
     # generate plot
     g <- ggplot(dataToPlotOrdered, aes(x=factor(cellID), y=gene, fill=factor(ident)))
     g <- g + geom_bar(stat="identity")
