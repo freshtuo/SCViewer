@@ -141,14 +141,17 @@ shinyServer(function(input, output) {
     curGene <- getGene()
     # get current selected condition column name
     curCondition <- getCondition()
-    # extract needed columns
+    # extract needed columns and
+    # add a new column by combining the "ident" column and the selected condition column
     if (curCondition != "None"){
       dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2",curGene,curCondition)]
       colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","gene","condition")
+      dataToPlot$cohort <- paste(dataToPlot$ident, dataToPlot$condition, sep=" - ")
     }
     else{
       dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2",curGene)]
       colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","gene")
+      dataToPlot$cohort <- dataToPlot$ident
     }
     return(dataToPlot)
   })
@@ -252,18 +255,9 @@ shinyServer(function(input, output) {
     dataToPlot <- prepareData()
     if (is.null(dataToPlot))
       return(NULL)
-    # get current selected condition
-    curCondition <- getCondition()
-    # create a new column by combining the "ident" column and the selected condition column
-    if (curCondition != "None")
-      dataToPlot$cohort <- paste(dataToPlot$ident, dataToPlot$condition, sep=" - ")
-    else
-      dataToPlot$cohort <- dataToPlot$ident
-    ##write.table(dataToPlot, file="/tmp/dataToPlot.txt", quote=F, sep="\t")
     # order cells by cohort column
     dataToPlotOrdered <- dataToPlot[with(dataToPlot,order(cohort)),]
     dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort)
-    ##write.table(dataToPlotOrdered, file="/tmp/dataToPlotOrder.txt", quote=F, sep="\t")
     ##dataToPlotOrdered$cohort <- factor(dataToPlotOrdered$cohort, levels=c("Endothelial cells - None","Endothelial cells - Diabetes","Mesangial cells - None","Mesangial cells - Diabetes","Podocyte - None","Podocyte - Diabetes","Immune cells - None","Immune cells - Diabetes","Tubular cells - None","Tubular cells - Diabetes"))
     # generate plot
     g <- ggplot(dataToPlotOrdered, aes(x=factor(cellID), y=gene, fill=factor(ident)))
