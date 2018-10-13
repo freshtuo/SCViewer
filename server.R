@@ -21,7 +21,8 @@ shinyServer(function(input, output) {
     myGenes <- getGeneList()
     myClusters <- getClusterList()
     myConditions <- getNonNumericCols()
-    return(wellPanel(selectInput(inputId="gene", 
+    if (input$tab == "tSNE")
+      return(wellPanel(selectInput(inputId="gene", 
                                  label="Gene",
                                  choices=myGenes,
                                  selected=intersect(c("Gapdh","GAPDH"),myGenes)
@@ -30,22 +31,31 @@ shinyServer(function(input, output) {
                                 label="Cluster",
                                 choices=c("All",myClusters),
                                 selected="All"
-                    ),
-                    selectInput(inputId="condition",
-                                label="Condition",
-                                choices=c("None",myConditions),
-                                selected="None"
                     )
-    ))
+      ))
+    else if (input$tab == "Bar" || input$tab == "Violin")
+      return(wellPanel(selectInput(inputId="gene", 
+                                   label="Gene",
+                                   choices=myGenes,
+                                   selected=intersect(c("Gapdh","GAPDH"),myGenes)
+      ),
+      selectInput(inputId="condition",
+                  label="Condition",
+                  choices=c("None",myConditions),
+                  selected="None"
+      )
+      ))
+    else
+      return()
   })
   # check if file is uploaded
   output$fileUploaded <- reactive({
     return(!is.null(mergeData()))
   })
   # track the current tab selection
-  observe({
-    print(input$tab)
-  })
+  #observe({
+  #  print(input$tab)
+  #})
   outputOptions(output, "fileUploaded", suspendWhenHidden=FALSE)
   # load expression data if available
   getExpData <- reactive({
