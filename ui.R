@@ -20,7 +20,9 @@ shinyUI(fluidPage(
                                                 column(6,plotOutput("tsneRef")))),
                 tabPanel(title="Bar", plotOutput("barExp")),
                 tabPanel(title="Violin", plotOutput("violinExp")),
-                tabPanel(title="About", h4("This panel is intentionally left blank"), h3("test"))
+                tabPanel(title="About", 
+                         h4("Thank you for using Single Cell Data Viewer!"),
+                         HTML('Please address questions and comments to <a href="mailto:freshtuo@gmail.com" >Tuo Zhang</a>.'))
                 )
     ),
 
