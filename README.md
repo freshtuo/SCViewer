@@ -1,11 +1,21 @@
 # SCViewer
-single cell data viewer
+####single cell data viewer
 
-developed using Shiny app.
+####developed using Shiny app.
 
+###tSNE panel
 ![tSNE panel](screenshots/tSNE_tab.png)
-<img width="1152" alt="tsne_tab" src="https://user-images.githubusercontent.com/35178331/46910531-22816100-cf14-11e8-958e-9820b5f0077f.png">
+t-SNE plots showing different types of cells (right), and highlighting expressions of a given gene (left).
+User can choose a gene and show its expression in cells of a given cell type.
+
+###Bar panel
 ![bar panel](screenshots/bar_tab.png)
-<img width="1151" alt="bar_tab" src="https://user-images.githubusercontent.com/35178331/46910534-2dd48c80-cf14-11e8-9365-d9407006a79f.png">
+Bar plot showing per-cell expressions. Each bar represents a cell and its height indicates expression.
+By default, cells are grouped according to cell type clusters.
+User can choose an additional condition factor based on which cells will be arranged in refined groups.
+
+###Violin panel
 ![violin panel](screenshots/violin_tab.png)
-<img width="1152" alt="violin_tab" src="https://user-images.githubusercontent.com/35178331/46910535-3036e680-cf14-11e8-99a9-7e116374de7f.png">
+Violin plot showing expression distribution within a cell group.
+By default, cells are grouped according to cell type clusters.
+User can choose an additional condition factor based on which cells will be arranged in refined groups.
