@@ -23,28 +23,35 @@ shinyServer(function(input, output) {
     myConditions <- getNonNumericCols()
     if (input$tab == "tSNE")
       return(wellPanel(selectInput(inputId="gene", 
-                                 label="Gene",
-                                 choices=myGenes,
-                                 selected=intersect(c("Gapdh","GAPDH"),myGenes)
-                    ),
-                    selectInput(inputId="cluster",
-                                label="Cluster",
-                                choices=c("All",myClusters),
-                                selected="All"
-                    )
+                                  label="Gene",
+                                  choices=myGenes,
+                                  selected=intersect(c("Gapdh","GAPDH"),myGenes)
+                      ),
+                      selectInput(inputId="cluster",
+                                  label="Cluster",
+                                  choices=c("All",myClusters),
+                                  selected="All"
+                      )
       ))
     else if (input$tab == "Bar" || input$tab == "Violin")
       return(wellPanel(selectInput(inputId="gene", 
                                    label="Gene",
                                    choices=myGenes,
                                    selected=intersect(c("Gapdh","GAPDH"),myGenes)
-      ),
-      selectInput(inputId="condition",
-                  label="Condition",
-                  choices=c("None",myConditions),
-                  selected="None"
-      )
+                      ),
+                      selectInput(inputId="condition",
+                                  label="Condition",
+                                  choices=c("None",myConditions),
+                                  selected="None"
+                      )
       ))
+    else if (input$tab == "Pie")
+      return(wellPanel(selectInput(inputId="condition",
+                                   label="Condition",
+                                   choices=c("None",myConditions),
+                                   selected="None")
+                       )
+             )
     else
       return()
   })
@@ -74,6 +81,10 @@ shinyServer(function(input, output) {
                                 "By default, cells are grouped according to cell type clusters.",br(),
                                 "User can choose an additional condition factor based on which",
                                 "cells will be arranged in refined groups.")))
+    else if (input$tab == "Pie")
+      return(wellPanel(helpText("Pie chart showing percentage of cells in each cluster.",br(),
+                                "User can choose an additional condition factor based on which",
+                                "pie chart will be generated per condition.")))
     else
       return()
   })
@@ -337,6 +348,44 @@ shinyServer(function(input, output) {
     g <- g + ylab("Expression (log-scale)") 
     g <- g + theme(axis.title=element_text(size=16,face="bold"), axis.text=element_text(size=15), axis.title.x=element_blank())
     return(g)
+  })
+  # draw cell number pie chart
+  output$pieCell <- renderPlot({
+    # get cluster info
+    clustData <- getClustData()
+    if (is.null(clustData))
+      return(NULL)
+    # get current selected condition column name
+    curCondition <- getCondition()
+    # make pie chart
+    if (curCondition != "None"){
+      dataToPlot <- as.data.frame(table(clustData[,c("ident",curCondition)]))
+      colnames(dataToPlot) <- c("Cluster","Condition","Freq")
+      # calculate percentage
+      #myPercent <- function(tx){
+      #  return (round(tx/sum(tx)*100,digits=1))
+      #}
+      #dataToPlot.agg <- aggregate(Freq ~ Condition, dataToPlot, myPercent)
+      g <- ggplot(dataToPlot, aes(x=factor(1), fill=Cluster))
+      g <- g + geom_bar(width=1) + facet_wrap(~Condition)
+      g <- g + coord_polar("y")
+      return(g)
+    }
+    else{
+      dataToPlot <- as.data.frame(table(clustData[,c("ident")]))
+      colnames(dataToPlot) <- c("Cluster","Freq")
+      # calculate percentage
+      dataToPlot$Percent <- round(dataToPlot$Freq/sum(dataToPlot$Freq)*100,digits=1)
+      # plot
+      g <- ggplot(dataToPlot, aes(x="", y=Percent, fill=Cluster, label=Percent))
+      g <- g + geom_bar(width=1, stat="identity")
+      g <- g + coord_polar("y", start=0, direction=-1)
+      g <- g + theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+      g <- g + theme(panel.border=element_blank(), panel.grid=element_blank())
+      g <- g + theme(axis.ticks=element_blank(), axis.text.x=element_blank())
+      g <- g + geom_text(size=5)
+      return(g)
+    }
   })
   # output$distPlot <- renderPlot({
   #   
