@@ -9,6 +9,8 @@
 
 library(shiny)
 library(ggplot2)
+#library(ggrepel)
+library(dplyr)
 
 options(shiny.maxRequestSize=100*1024^2)
 
@@ -362,13 +364,16 @@ shinyServer(function(input, output) {
       dataToPlot <- as.data.frame(table(clustData[,c("ident",curCondition)]))
       colnames(dataToPlot) <- c("Cluster","Condition","Freq")
       # calculate percentage
-      #myPercent <- function(tx){
-      #  return (round(tx/sum(tx)*100,digits=1))
-      #}
-      #dataToPlot.agg <- aggregate(Freq ~ Condition, dataToPlot, myPercent)
-      g <- ggplot(dataToPlot, aes(x=factor(1), fill=Cluster))
-      g <- g + geom_bar(width=1) + facet_wrap(~Condition)
-      g <- g + coord_polar("y")
+      dataToPlot.per <- as.data.frame(group_by(dataToPlot, Condition) %>% 
+                                        mutate(Percent=round(Freq/sum(Freq)*100,digits=1)))
+      g <- ggplot(dataToPlot.per, aes(x="", y=Percent, fill=Cluster))
+      g <- g + geom_bar(width=1, stat="identity") + facet_wrap(~Condition)
+      g <- g + coord_polar("y", start=0, direction=-1) + theme_minimal()
+      g <- g + theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+      g <- g + theme(panel.border=element_blank(), panel.grid=element_blank())
+      g <- g + theme(axis.ticks=element_blank(), axis.text.x=element_blank())
+      g <- g + scale_y_continuous(breaks=cumsum(dataToPlot.per$Freq) - dataToPlot.per$Freq/2, labels=dataToPlot.per$Percent)
+      g <- g + geom_text(aes(label=Percent), size=5)
       return(g)
     }
     else{
@@ -379,7 +384,7 @@ shinyServer(function(input, output) {
       # plot
       g <- ggplot(dataToPlot, aes(x="", y=Percent, fill=Cluster, label=Percent))
       g <- g + geom_bar(width=1, stat="identity")
-      g <- g + coord_polar("y", start=0, direction=-1)
+      g <- g + coord_polar("y", start=0, direction=-1) + theme_minimal()
       g <- g + theme(axis.title.x=element_blank(), axis.title.y=element_blank())
       g <- g + theme(panel.border=element_blank(), panel.grid=element_blank())
       g <- g + theme(axis.ticks=element_blank(), axis.text.x=element_blank())
