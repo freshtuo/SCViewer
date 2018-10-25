@@ -9,7 +9,7 @@
 
 library(shiny)
 library(ggplot2)
-#library(ggrepel)
+library(ggrepel)
 library(dplyr)
 
 options(shiny.maxRequestSize=100*1024^2)
@@ -365,15 +365,18 @@ shinyServer(function(input, output) {
       colnames(dataToPlot) <- c("Cluster","Condition","Freq")
       # calculate percentage
       dataToPlot.per <- as.data.frame(group_by(dataToPlot, Condition) %>% 
-                                        mutate(Percent=round(Freq/sum(Freq)*100,digits=1)))
+                                        mutate(Percent=round(Freq/sum(Freq)*100,digits=1),
+                                               Pos=100-cumsum(Percent)+Percent/2,
+                                               Label=paste(Percent,"%",sep="")))
       g <- ggplot(dataToPlot.per, aes(x="", y=Percent, fill=Cluster))
       g <- g + geom_bar(width=1, stat="identity") + facet_wrap(~Condition)
       g <- g + coord_polar("y", start=0, direction=-1) + theme_minimal()
       g <- g + theme(axis.title.x=element_blank(), axis.title.y=element_blank())
       g <- g + theme(panel.border=element_blank(), panel.grid=element_blank())
       g <- g + theme(axis.ticks=element_blank(), axis.text.x=element_blank())
-      g <- g + scale_y_continuous(breaks=cumsum(dataToPlot.per$Freq) - dataToPlot.per$Freq/2, labels=dataToPlot.per$Percent)
-      g <- g + geom_text(aes(label=Percent), size=5)
+      g <- g + theme(strip.text=element_text(size=16, face="bold"))
+      ##g <- g + scale_y_continuous(breaks=cumsum(dataToPlot.per$Freq) - dataToPlot.per$Freq/2, labels=dataToPlot.per$Percent)
+      g <- g + geom_text_repel(aes(y=Pos, label=Label), size=5)
       return(g)
     }
     else{
@@ -381,14 +384,17 @@ shinyServer(function(input, output) {
       colnames(dataToPlot) <- c("Cluster","Freq")
       # calculate percentage
       dataToPlot$Percent <- round(dataToPlot$Freq/sum(dataToPlot$Freq)*100,digits=1)
+      dataToPlot$Pos <- 100-cumsum(dataToPlot$Percent)+dataToPlot$Percent/2
+      dataToPlot$Label <- paste(dataToPlot$Percent,"%",sep="")
       # plot
-      g <- ggplot(dataToPlot, aes(x="", y=Percent, fill=Cluster, label=Percent))
+      g <- ggplot(dataToPlot, aes(x="", y=Percent, fill=Cluster))
       g <- g + geom_bar(width=1, stat="identity")
       g <- g + coord_polar("y", start=0, direction=-1) + theme_minimal()
       g <- g + theme(axis.title.x=element_blank(), axis.title.y=element_blank())
       g <- g + theme(panel.border=element_blank(), panel.grid=element_blank())
       g <- g + theme(axis.ticks=element_blank(), axis.text.x=element_blank())
-      g <- g + geom_text(size=5)
+      g <- g + theme(strip.text=element_text(size=16, face="bold"))
+      g <- g + geom_text_repel(aes(y=Pos, label=Label), size=5)
       return(g)
     }
   })
