@@ -220,6 +220,8 @@ shinyServer(function(input, output) {
     dataToPlot <- prepareData()
     if (is.null(dataToPlot))
       return(NULL)
+    # factorize ident
+    dataToPlot$ident <- factor(dataToPlot$ident)
     # order by cohort
     dataToPlotOrdered <- dataToPlot[with(dataToPlot, order(gene)),]
     return(dataToPlotOrdered)
