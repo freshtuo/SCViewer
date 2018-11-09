@@ -355,6 +355,9 @@ shinyServer(function(input, output) {
   })
   # draw cell number pie chart
   output$pieCell <- renderPlot({
+    # make sure expression file is also loaded though it is not necessary for pie chart
+    if (is.null(input$expFile))
+      return(NULL)
     # get cluster info
     clustData <- getClustData()
     if (is.null(clustData))
