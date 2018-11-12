@@ -54,6 +54,18 @@ shinyServer(function(input, output) {
                                    selected="None")
                        )
              )
+    else if (input$tab == "Density")
+      return(wellPanel(selectInput(inputId="gene", 
+                                   label="Gene",
+                                   choices=myGenes,
+                                   selected=intersect(c("Gapdh","GAPDH"),myGenes)
+                      ),
+                      selectInput(inputId="condition",
+                                   label="Condition",
+                                   choices=c("None",myConditions),
+                                   selected="None")
+                      )
+             )
     else
       return()
   })
@@ -87,6 +99,10 @@ shinyServer(function(input, output) {
       return(wellPanel(helpText("Pie chart showing percentage of cells in each cluster.",br(),
                                 "User can choose an additional condition factor based on which",
                                 "pie chart will be generated per condition.")))
+    else if (input$tab == "Density")
+      return(wellPanel(helpText("Density plot showing distribution of expression for a given gene.",br(),
+                                "User can choose an additional condition factor based on which",
+                                "Density plot will be generated per condition.")))
     else
       return()
   })
@@ -402,6 +418,37 @@ shinyServer(function(input, output) {
       g <- g + geom_text_repel(aes(y=Pos, label=Label), size=5)
       return(g)
     }
+  })
+  # draw expression density plot
+  output$densityExp <- renderPlot({
+    # get data for plotting
+    dataToPlot <- prepareData()
+    if (is.null(dataToPlot))
+      return(NULL)
+    # get current selected condition column name
+    curCondition <- getCondition()
+    # make density plot
+    if (curCondition != "None"){
+      g <- ggplot(dataToPlot, aes(x=gene, fill=condition)) + geom_density(alpha=0.5)
+      g <- g + facet_wrap(~ident)
+      g <- g + theme_classic()
+      g <- g + xlab("Expression (log-scale)")
+      g <- g + theme(strip.background=element_rect(color="white", fill=NA), panel.border=element_rect(color="lightgray", fill=NA))
+      g <- g + theme(axis.line = element_line(color = "black")) + theme(strip.text.x=element_text(size=12, face="bold"))
+      return(g)
+    }
+    else{
+      g <- ggplot(dataToPlot, aes(x=gene, fill=ident)) + geom_density(alpha=0.5)
+      g <- g + theme_classic()
+      g <- g + xlab("Expression (log-scale)") 
+      return(g)
+    }
+    #g <- ggplot(dataToPlotOrdered, aes(x=cohort, y=gene, fill=cohort))
+    #g <- g + geom_violin() + stat_summary(fun.data="median_hilow", geom="pointrange")
+    #g <- g + theme(legend.position="none") + theme(axis.text.x=element_text(angle=90, size=12, face="bold"))
+    #g <- g + ylab("Expression (log-scale)") 
+    #g <- g + theme(axis.title=element_text(size=16,face="bold"), axis.text=element_text(size=15), axis.title.x=element_blank())
+    #return(g)
   })
   # output$distPlot <- renderPlot({
   #   
