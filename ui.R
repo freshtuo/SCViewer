@@ -22,6 +22,7 @@ shinyUI(fluidPage(
                 tabPanel(title="Bar", plotOutput("barExp")),
                 tabPanel(title="Violin", plotOutput("violinExp")),
                 tabPanel(title="Density", plotOutput("densityExp")),
+                tabPanel(title="BarLine", plotOutput("barLineExp")),
                 tabPanel(title="About", 
                          h4("Thank you for using Single Cell Data Viewer!"),
                          HTML('Please address questions and comments to <a href="mailto:taz2008@med.cornell.edu" >Tuo Zhang</a>.'))

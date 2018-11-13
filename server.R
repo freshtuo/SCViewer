@@ -66,6 +66,18 @@ shinyServer(function(input, output) {
                                    selected="None")
                       )
              )
+    else if (input$tab == "BarLine")
+      return(wellPanel(selectInput(inputId="gene",
+                                   label="Gene",
+                                   choices=myGenes,
+                                   selected=intersect(c("Gapdh","GAPDH"),myGenes)
+                      ),
+                      selectInput(inputId="condition",
+                                  label="Condition",
+                                  choices=c("None",myConditions),
+                                  selected="None")
+                      )
+             )
     else
       return()
   })
@@ -102,7 +114,11 @@ shinyServer(function(input, output) {
     else if (input$tab == "Density")
       return(wellPanel(helpText("Density plot showing distribution of expression for a given gene.",br(),
                                 "User can choose an additional condition factor based on which",
-                                "Density plot will be generated per condition.")))
+                                "Density plot will be generated highlighting differences among conditions.")))
+    else if (input$tab == "BarLine")
+      return(wellPanel(helpText("Bar&Line plot showing percentage of cells expressing a given gene and their median expression.",br(),
+                                "User can choose an additional condition factor based on which",
+                                "Bar&Line plot will be generated highlighting differences among conditions.")))
     else
       return()
   })
@@ -443,12 +459,62 @@ shinyServer(function(input, output) {
       g <- g + xlab("Expression (log-scale)") 
       return(g)
     }
-    #g <- ggplot(dataToPlotOrdered, aes(x=cohort, y=gene, fill=cohort))
-    #g <- g + geom_violin() + stat_summary(fun.data="median_hilow", geom="pointrange")
-    #g <- g + theme(legend.position="none") + theme(axis.text.x=element_text(angle=90, size=12, face="bold"))
-    #g <- g + ylab("Expression (log-scale)") 
-    #g <- g + theme(axis.title=element_text(size=16,face="bold"), axis.text=element_text(size=15), axis.title.x=element_blank())
-    #return(g)
+  })
+  # draw bar&line plot
+  output$barLineExp <- renderPlot({
+    # get data for plotting
+    dataToPlot <- prepareData()
+    if (is.null(dataToPlot))
+      return(NULL)
+    # get current selected condition column name
+    curCondition <- getCondition()
+    # get current selected gene
+    curGene <- getGene()
+    # make density plot
+    if (curCondition != "None"){
+      # calculate percentage of cells expressing a gene for each cluster+condition
+      tpercent <- aggregate(gene ~ ident+condition, data=dataToPlot, FUN=function(x) sum(x>0)/length(x))
+      colnames(tpercent) <- c("ident","condition","percent")
+      # calculate median expression value for the above sets of cells
+      texp <- aggregate(gene ~ ident+condition, data=dataToPlot, FUN=function(x) median(x[x>0]))
+      colnames(texp) <- c("ident","condition","medExp")
+      # merge results
+      tdata <- merge(tpercent, texp, by=c("ident","condition"), all=T)
+      # draw plot
+      tfactor <- ceiling(max(tdata$medExp)/max(tdata$percent))
+      g <- ggplot(tdata)
+      g <- g + geom_bar(aes(x=condition, y=percent), stat="identity", fill="lightsalmon", width=0.6)
+      g <- g + geom_line(aes(x=as.numeric(condition), y=medExp/tfactor), size=1, color="steelblue2")
+      g <- g + geom_point(aes(x=condition, y=medExp/tfactor), shape=19, size=2, color="steelblue3")
+      g <- g + facet_wrap(~ident)
+      g <- g + scale_y_continuous(name=paste("Fraction of cells expressing",curGene,sep=" "), sec.axis=sec_axis(~.*tfactor, name="Median expression in log-scale"))
+      g <- g + theme_classic()
+      g <- g + theme(axis.title.x=element_blank(), axis.text.x=element_text(size=12, face="bold", angle=90))
+      g <- g + theme(axis.title.y=element_text(size=15, face="bold"), axis.text.y=element_text(size=12, face="bold"))
+      g <- g + theme(strip.background=element_rect(color="white", fill=NA), panel.border=element_rect(color="lightgray", fill=NA))
+      return(g)
+    }
+    else{
+      # calculate percentage of cells expressing a gene for each cluster
+      tpercent <- aggregate(gene ~ ident, data=dataToPlot, FUN=function(x) sum(x>0)/length(x))
+      colnames(tpercent) <- c("ident","percent")
+      # calculate median expression value for the above sets of cells
+      texp <- aggregate(gene ~ ident, data=dataToPlot, FUN=function(x) median(x[x>0]))
+      colnames(texp) <- c("ident","medExp")
+      # merge results
+      tdata <- merge(tpercent, texp, by="ident", all=T)
+      # draw plot
+      tfactor <- ceiling(max(tdata$medExp)/max(tdata$percent))
+      g <- ggplot(tdata)
+      g <- g + geom_bar(aes(x=ident, y=percent), stat="identity", fill="lightsalmon", width=0.6)
+      g <- g + geom_line(aes(x=as.numeric(ident), y=medExp/tfactor), size=1, color="steelblue2")
+      g <- g + geom_point(aes(x=ident, y=medExp/tfactor), shape=19, size=2, color="steelblue3")
+      g <- g + scale_y_continuous(name=paste("Fraction of cells expressing",curGene,sep=" "), sec.axis=sec_axis(~.*tfactor, name="Median expression in log-scale"))
+      g <- g + theme_classic()
+      g <- g + theme(axis.title.x=element_blank(), axis.text.x=element_text(size=12, face="bold", angle=90))
+      g <- g + theme(axis.title.y=element_text(size=15, face="bold"), axis.text.y=element_text(size=12, face="bold"))
+      return(g)
+    }
   })
   # output$distPlot <- renderPlot({
   #   
