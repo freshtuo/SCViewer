@@ -478,6 +478,8 @@ shinyServer(function(input, output) {
       # calculate median expression value for the above sets of cells
       texp <- aggregate(gene ~ ident+condition, data=dataToPlot, FUN=function(x) median(x[x>0]))
       colnames(texp) <- c("ident","condition","medExp")
+      # fix NA items (i.e. no cells in the given cluster&condition express the given gene)
+      texp[is.na(texp)] <- 0
       # merge results
       tdata <- merge(tpercent, texp, by=c("ident","condition"), all=T)
       # draw plot
@@ -501,6 +503,8 @@ shinyServer(function(input, output) {
       # calculate median expression value for the above sets of cells
       texp <- aggregate(gene ~ ident, data=dataToPlot, FUN=function(x) median(x[x>0]))
       colnames(texp) <- c("ident","medExp")
+      # fix NA items (i.e. no cells in the given cluster express the given gene)
+      texp[is.na(texp)] <- 0
       # merge results
       tdata <- merge(tpercent, texp, by="ident", all=T)
       # draw plot
