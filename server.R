@@ -12,7 +12,7 @@ library(ggplot2)
 library(ggrepel)
 library(dplyr)
 
-options(shiny.maxRequestSize=100*1024^2)
+options(shiny.maxRequestSize=200*1024^2)
 
 # Define server logic required to draw plots
 shinyServer(function(input, output) {
