@@ -35,10 +35,16 @@ shinyUI(fluidPage(
     fluidRow(
       column(4,
              wellPanel(fileInput(inputId="expFile",
-                                 label="upload expression data:",
+                                 label="upload expression matrix:",
+                                 multiple=F),
+                       fileInput(inputId="geneFile",
+                                 label="upload gene list:",
+                                 multiple=F),
+                       fileInput(inputId="cellFile",
+                                 label="upload cell list:",
                                  multiple=F),
                        fileInput(inputId="clustFile",
-                                 label="upload cluster data:", multiple=F)
+                                 label="upload annotations:", multiple=F)
              )
       ),
       column(4,

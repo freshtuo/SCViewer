@@ -16,11 +16,11 @@ library(Matrix)
 options(shiny.maxRequestSize=200*1024^2)
 
 # load expression matrix
-myLoadExpression <- function(tdir){
+myLoadExpression <- function(texpFile, tgeneFile, tcellFile){
   #texp <- as(readMM(gzfile(paste(tdir, "expression.mtx.gz", sep="/"))), "dgCMatrix")
-  texp <- as.matrix(readMM(gzfile(paste(tdir, "expression.mtx.gz", sep="/"))))
-  rownames(texp) <- as.vector(read.table(file=paste(tdir, "genes.txt.gz", sep="/"), header=F, check.names=F)$V1)
-  colnames(texp) <- as.vector(read.table(file=paste(tdir, "cells.txt.gz", sep="/"), header=F, check.names=F)$V1)
+  texp <- as.matrix(readMM(gzfile(texpFile)))
+  rownames(texp) <- as.vector(read.table(file=tgeneFile, header=F, check.names=F)$V1)
+  colnames(texp) <- as.vector(read.table(file=tcellFile, header=F, check.names=F)$V1)
   return(texp)
 }
 
@@ -135,10 +135,12 @@ shinyServer(function(input, output) {
   # load expression data if available
   getExpData <- reactive({
     expFile <- input$expFile
-    if (is.null(expFile))
+    geneFile <- input$geneFile
+    cellFile <- input$cellFile
+    if (is.null(expFile) | is.null(geneFile) | is.null(cellFile))
       return(NULL)
     #return(read.table(expFile$datapath, header=T, check.names=F, row.names=1, sep="\t"))
-    return(myLoadExpression(dirname(expFile$datapath)))
+    return(myLoadExpression(expFile$datapath, geneFile$datapath, cellFile$datapath))
   })
   # load cluster info data if available
   getClustData <- reactive({
