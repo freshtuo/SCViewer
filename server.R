@@ -354,10 +354,16 @@ shinyServer(function(input, output) {
     # get current selected cluster
     curCluster <- getCluster()
     # draw expression tSNE plot
-    g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=tSNE_1,y=tSNE_2,color=gene))
-    g <- g + geom_point(shape=19, size=3, alpha=.8)
+    # in case a non-expressed gene, use gray color
+    g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=tSNE_1,y=tSNE_2))
+    g <- g + geom_point(shape=19, size=3, alpha=.8, color="grey")
+    # otherwise
+    if (hcut > 0){
+      g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=tSNE_1,y=tSNE_2,color=gene))
+      g <- g + geom_point(shape=19, size=3, alpha=.8)
+      g <- g + scale_color_gradient(low="grey", high="red", limits=c(0,hcut))
+    }
     g <- g + coord_cartesian(xlim=c(lower.x, upper.x), ylim=c(lower.y, upper.y))
-    g <- g + scale_color_gradient(low="grey", high="red", limits=c(0,hcut))
     g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
     g <- g + theme(legend.justification=c(0,0), legend.title=element_blank())
     g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=15))
