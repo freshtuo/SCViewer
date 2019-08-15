@@ -11,8 +11,18 @@ library(shiny)
 library(ggplot2)
 library(ggrepel)
 library(dplyr)
+library(Matrix)
 
 options(shiny.maxRequestSize=200*1024^2)
+
+# load expression matrix
+myLoadExpression <- function(tdir){
+  #texp <- as(readMM(gzfile(paste(tdir, "expression.mtx.gz", sep="/"))), "dgCMatrix")
+  texp <- as.matrix(readMM(gzfile(paste(tdir, "expression.mtx.gz", sep="/"))))
+  rownames(texp) <- as.vector(read.table(file=paste(tdir, "genes.txt.gz", sep="/"), header=F, check.names=F)$V1)
+  colnames(texp) <- as.vector(read.table(file=paste(tdir, "cells.txt.gz", sep="/"), header=F, check.names=F)$V1)
+  return(texp)
+}
 
 # Define server logic required to draw plots
 shinyServer(function(input, output) {
@@ -127,7 +137,8 @@ shinyServer(function(input, output) {
     expFile <- input$expFile
     if (is.null(expFile))
       return(NULL)
-    return(read.table(expFile$datapath, header=T, check.names=F, row.names=1, sep="\t"))
+    #return(read.table(expFile$datapath, header=T, check.names=F, row.names=1, sep="\t"))
+    return(myLoadExpression(dirname(expFile$datapath)))
   })
   # load cluster info data if available
   getClustData <- reactive({
@@ -147,7 +158,7 @@ shinyServer(function(input, output) {
     if (is.null(clustData))
       return(NULL)
     # merge two tables
-    combinedData <- merge(t(expData), clustData, by=0, all=T)
+    combinedData <- merge(as.data.frame(t(expData)), clustData, by=0, all=T)
     rownames(combinedData) <- combinedData$Row.names
     ##combinedData <- combinedData[,-1]
     return(combinedData)
