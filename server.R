@@ -163,7 +163,9 @@ shinyServer(function(input, output) {
     clustData <- getClustData()
     if (is.null(clustData))
       return(NULL)
-    return(unique(as.vector(clustData$ident)))
+    tclusters <- unique(as.vector(clustData$ident))
+    # reorder clusters and return
+    return(tclusters[order(tclusters)])
   })
   # fetch current selected gene
   getGene <- reactive({
