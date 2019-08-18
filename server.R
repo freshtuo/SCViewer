@@ -18,7 +18,7 @@ options(shiny.maxRequestSize=300*1024^2)
 # load expression matrix
 myLoadExpression <- function(texpFile, tgeneFile, tcellFile){
   #texp <- as(readMM(gzfile(paste(tdir, "expression.mtx.gz", sep="/"))), "dgCMatrix")
-  texp <- as.matrix(readMM(gzfile(texpFile)))
+  texp <- as(readMM(gzfile(texpFile)), "dgCMatrix")
   rownames(texp) <- as.vector(read.table(file=tgeneFile, header=F, check.names=F)$V1)
   colnames(texp) <- as.vector(read.table(file=tcellFile, header=F, check.names=F)$V1)
   return(texp)
@@ -93,7 +93,7 @@ shinyServer(function(input, output) {
   })
   # check if file is uploaded
   output$fileUploaded <- reactive({
-    return(!is.null(mergeData()))
+    return(!is.null(prepareData()))
   })
   outputOptions(output, "fileUploaded", suspendWhenHidden=FALSE)
   # track the current tab selection
@@ -149,22 +149,6 @@ shinyServer(function(input, output) {
       return(NULL)
     return(read.table(clustFile$datapath, header=T, check.names=F, row.names=1, sep="\t"))
   })
-  # merge expression data with clust info data
-  mergeData <- reactive({
-    # get expression data
-    expData <- getExpData()
-    if (is.null(expData))
-      return(NULL)
-    # get clust info data
-    clustData <- getClustData()
-    if (is.null(clustData))
-      return(NULL)
-    # merge two tables
-    combinedData <- merge(as.data.frame(t(expData)), clustData, by=0, all=T)
-    rownames(combinedData) <- combinedData$Row.names
-    ##combinedData <- combinedData[,-1]
-    return(combinedData)
-  })
   # load available genes
   getGeneList <- reactive({
     # get expression data
@@ -187,8 +171,10 @@ shinyServer(function(input, output) {
     myGenes <- getGeneList()
     if (is.null(myGenes))
       return(NULL)
-    if (is.null(input$gene))
-      return(intersect(c("Gapdh","GAPDH"),myGenes))
+    if (is.null(input$gene)){
+      #return(intersect(c("Gapdh","GAPDH"),myGenes))
+      return(NULL)
+    }
     return(input$gene)
   })
   # fetch current selected cluster
@@ -214,34 +200,47 @@ shinyServer(function(input, output) {
   })
   # extract non-numeric columns
   getNonNumericCols <- reactive({
-    # get combined data table
-    combinedData <- mergeData()
-    if (is.null(combinedData))
+    # get clust info data
+    clustData <- getClustData()
+    if (is.null(clustData))
       return(NULL)
     # get non-numeric columns
-    selCols <- colnames(combinedData)[!sapply(combinedData, is.numeric)]
+    selCols <- colnames(clustData)[!sapply(clustData, is.numeric)]
     # remove columns "ident", "orig.ident"
     return(selCols[!selCols %in% c("ident","orig.ident","Row.names")])
   })
   # extract data columns for plotting
   prepareData <- reactive({
-    # get combined data table
-    combinedData <- mergeData()
-    if (is.null(combinedData))
+    # get expression data
+    expData <- getExpData()
+    if (is.null(expData))
+      return(NULL)
+    # get clust info data
+    clustData <- getClustData()
+    if (is.null(clustData))
       return(NULL)
     # get current selected gene
     curGene <- getGene()
     # get current selected condition column name
     curCondition <- getCondition()
+    # initial data
+    combinedData <- clustData
+    # add expression of the selected gene
+    if (is.null(curGene)){
+      combinedData$gene <- rep(0, nrow(clustData))
+    } else {
+      combinedData$gene <- as.vector(expData[curGene, rownames(clustData)])
+    }
+    combinedData$Row.names <- rownames(combinedData)
     # extract needed columns and
     # add a new column by combining the "ident" column and the selected condition column
     if (curCondition != "None"){
-      dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2",curGene,curCondition)]
+      dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2","gene",curCondition)]
       colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","gene","condition")
       dataToPlot$cohort <- paste(dataToPlot$ident, dataToPlot$condition, sep=" - ")
     }
     else{
-      dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2",curGene)]
+      dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2","gene")]
       colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","gene")
       dataToPlot$cohort <- dataToPlot$ident
     }
