@@ -19,6 +19,8 @@ shinyUI(fluidPage(
                 tabPanel(title="Pie", plotOutput("pieCell")),
                 tabPanel(title="tSNE", fluidRow(column(6,plotOutput("tsneExp", width="95%", height="400px")),
                                                 column(6,plotOutput("tsneRef", width="100%", height="400px")))),
+                tabPanel(title="UMAP", fluidRow(column(6,plotOutput("umapExp", width="95%", height="400px")),
+                                                column(6,plotOutput("umapRef", width="100%", height="400px")))),
                 tabPanel(title="Bar", plotOutput("barExp")),
                 tabPanel(title="Violin", plotOutput("violinExp")),
                 tabPanel(title="Density", plotOutput("densityExp")),

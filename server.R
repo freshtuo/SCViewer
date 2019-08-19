@@ -45,6 +45,18 @@ shinyServer(function(input, output) {
                                   selected="All"
                       )
       ))
+    else if (input$tab == "UMAP")
+      return(wellPanel(selectInput(inputId="gene", 
+                                   label="Gene",
+                                   choices=myGenes,
+                                   selected=intersect(c("Gapdh","GAPDH"),myGenes)
+                      ),
+                      selectInput(inputId="cluster",
+                                  label="Cluster",
+                                  choices=c("All",myClusters),
+                                  selected="All"
+                      )
+      ))
     else if (input$tab == "Bar" || input$tab == "Violin")
       return(wellPanel(selectInput(inputId="gene", 
                                    label="Gene",
@@ -104,6 +116,10 @@ shinyServer(function(input, output) {
   output$myDescription <- renderUI({
     if (input$tab == "tSNE")
       return(wellPanel(helpText("t-SNE plots showing different types of cells (right)",
+                                "and highlighting expressions of a given gene (left).",br(),
+                                "User can choose a gene and show its expression in cells of a given cell type.")))
+    else if (input$tab == "UMAP")
+      return(wellPanel(helpText("UMAP plots showing different types of cells (right)",
                                 "and highlighting expressions of a given gene (left).",br(),
                                 "User can choose a gene and show its expression in cells of a given cell type.")))
     else if (input$tab == "Bar")
@@ -237,13 +253,13 @@ shinyServer(function(input, output) {
     # extract needed columns and
     # add a new column by combining the "ident" column and the selected condition column
     if (curCondition != "None"){
-      dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2","gene",curCondition)]
-      colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","gene","condition")
+      dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2","UMAP1","UMAP2","gene",curCondition)]
+      colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","UMAP1","UMAP2","gene","condition")
       dataToPlot$cohort <- paste(dataToPlot$ident, dataToPlot$condition, sep=" - ")
     }
     else{
-      dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2","gene")]
-      colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","gene")
+      dataToPlot <- combinedData[,c("Row.names","ident","tSNE_1","tSNE_2","UMAP1","UMAP2","gene")]
+      colnames(dataToPlot) <- c("cellID","ident","tSNE_1","tSNE_2","UMAP1","UMAP2","gene")
       dataToPlot$cohort <- dataToPlot$ident
     }
     return(dataToPlot)
@@ -291,7 +307,7 @@ shinyServer(function(input, output) {
     return(hcut)
   })
   # get lower and upper bound of tSNE coordinates
-  getAxisRange <- reactive({
+  getTsneAxisRange <- reactive({
     # get data for plotting
     dataToPlot <- prepareData()
     if (is.null(dataToPlot))
@@ -317,6 +333,33 @@ shinyServer(function(input, output) {
       upper.y <- max.y + myBase
     return(c(lower.x,upper.x,lower.y,upper.y))
   })
+  # get lower and upper bound of UMAP coordinates
+  getUmapAxisRange <- reactive({
+    # get data for plotting
+    dataToPlot <- prepareData()
+    if (is.null(dataToPlot))
+      return(NULL)
+    # find minimum and maximum for both axes
+    min.x <- min(dataToPlot$UMAP1)
+    max.x <- max(dataToPlot$UMAP1)
+    min.y <- min(dataToPlot$UMAP2)
+    max.y <- max(dataToPlot$UMAP2)
+    # round up with base 5
+    myBase <- 5
+    lower.x <- round(min.x / myBase) * myBase
+    if (lower.x > min.x)
+      lower.x <- min.x - myBase
+    upper.x <- round(max.x / myBase) * myBase
+    if (upper.x < max.x)
+      upper.x <- max.x + myBase
+    lower.y <- round(min.y / myBase) * myBase
+    if (lower.y > min.y)
+      lower.y <- min.y - myBase
+    upper.y <- round(max.y / myBase) * myBase
+    if (upper.y < max.y)
+      upper.y <- max.y + myBase
+    return(c(lower.x,upper.x,lower.y,upper.y))
+  })
   # draw reference tSNE plot
   output$tsneRef <- renderPlot({
     # get ordered data for plotting
@@ -324,7 +367,7 @@ shinyServer(function(input, output) {
     if (is.null(dataToPlotOrdered))
       return(NULL)
     # get axis range
-    axis.range <- getAxisRange()
+    axis.range <- getTsneAxisRange()
     lower.x <- axis.range[1]
     upper.x <- axis.range[2]
     lower.y <- axis.range[3]
@@ -349,7 +392,7 @@ shinyServer(function(input, output) {
     # get expression upperbound
     hcut <- getMaxExp()
     # get axis range
-    axis.range <- getAxisRange()
+    axis.range <- getTsneAxisRange()
     lower.x <- axis.range[1]
     upper.x <- axis.range[2]
     lower.y <- axis.range[3]
@@ -363,6 +406,62 @@ shinyServer(function(input, output) {
     # otherwise
     if (hcut > 0){
       g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=tSNE_1,y=tSNE_2,color=gene))
+      g <- g + geom_point(shape=19, size=3, alpha=.8)
+      g <- g + scale_color_gradient(low="grey", high="red", limits=c(0,hcut))
+    }
+    g <- g + coord_cartesian(xlim=c(lower.x, upper.x), ylim=c(lower.y, upper.y))
+    g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
+    g <- g + theme(legend.justification=c(0,0), legend.title=element_blank())
+    g <- g + theme(legend.key=element_blank()) + theme(legend.text=element_text(size=15))
+    g <- g + theme(axis.text=element_text(size=15), axis.title=element_text(size=16,face="bold"))
+    return(g)
+  })
+  # draw reference UMAP plot
+  output$umapRef <- renderPlot({
+    # get ordered data for plotting
+    dataToPlotOrdered <- orderDataByExpression()
+    if (is.null(dataToPlotOrdered))
+      return(NULL)
+    # get axis range
+    axis.range <- getUmapAxisRange()
+    lower.x <- axis.range[1]
+    upper.x <- axis.range[2]
+    lower.y <- axis.range[3]
+    upper.y <- axis.range[4]
+    # get current selected cluster
+    curCluster <- getCluster()
+    # draw reference UMAP plot
+    g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=UMAP1,y=UMAP2,color=ident))
+    g <- g + geom_point(shape=19, size=3, alpha=.8)
+    g <- g + coord_cartesian(xlim=c(lower.x, upper.x), ylim=c(lower.y, upper.y))
+    g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
+    g <- g + theme(legend.justification=c(0,0), legend.title=element_blank(), legend.text=element_text(size=12))
+    g <- g + theme(axis.text=element_text(size=15), axis.title=element_text(size=16,face="bold"))
+    return(g)
+  })
+  # draw expression UMAP plot
+  output$umapExp <- renderPlot({
+    # get ordered data for plotting
+    dataToPlotOrdered <- orderDataByExpression()
+    if (is.null(dataToPlotOrdered))
+      return(NULL)
+    # get expression upperbound
+    hcut <- getMaxExp()
+    # get axis range
+    axis.range <- getUmapAxisRange()
+    lower.x <- axis.range[1]
+    upper.x <- axis.range[2]
+    lower.y <- axis.range[3]
+    upper.y <- axis.range[4]
+    # get current selected cluster
+    curCluster <- getCluster()
+    # draw expression tSNE plot
+    # in case a non-expressed gene, use gray color
+    g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=UMAP1,y=UMAP2))
+    g <- g + geom_point(shape=19, size=3, alpha=.8, color="grey")
+    # otherwise
+    if (hcut > 0){
+      g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=UMAP1,y=UMAP2,color=gene))
       g <- g + geom_point(shape=19, size=3, alpha=.8)
       g <- g + scale_color_gradient(low="grey", high="red", limits=c(0,hcut))
     }
