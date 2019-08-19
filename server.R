@@ -372,12 +372,16 @@ shinyServer(function(input, output) {
     upper.x <- axis.range[2]
     lower.y <- axis.range[3]
     upper.y <- axis.range[4]
+    # cluster label
+    tlabel.pos <- aggregate(cbind(tSNE_1, tSNE_2) ~ ident, data=dataToPlotOrdered, FUN=median)
+    colnames(tlabel.pos) <- c("ident","X","Y")
     # get current selected cluster
     curCluster <- getCluster()
     # draw reference tSNE plot
     g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=tSNE_1,y=tSNE_2,color=ident))
     g <- g + geom_point(shape=19, size=3, alpha=.8)
     g <- g + coord_cartesian(xlim=c(lower.x, upper.x), ylim=c(lower.y, upper.y))
+    g <- g + geom_text(data=tlabel.pos[tlabel.pos$ident %in% curCluster,],aes(x=X, y=Y, label=ident), color="black")
     g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
     g <- g + theme(legend.justification=c(0,0), legend.title=element_blank(), legend.text=element_text(size=12))
     g <- g + theme(axis.text=element_text(size=15), axis.title=element_text(size=16,face="bold"))
@@ -428,12 +432,16 @@ shinyServer(function(input, output) {
     upper.x <- axis.range[2]
     lower.y <- axis.range[3]
     upper.y <- axis.range[4]
+    # cluster label
+    tlabel.pos <- aggregate(cbind(UMAP1, UMAP2) ~ ident, data=dataToPlotOrdered, FUN=median)
+    colnames(tlabel.pos) <- c("ident","X","Y")
     # get current selected cluster
     curCluster <- getCluster()
     # draw reference UMAP plot
     g <- ggplot(dataToPlotOrdered[dataToPlotOrdered$ident %in% curCluster, ], aes(x=UMAP1,y=UMAP2,color=ident))
     g <- g + geom_point(shape=19, size=3, alpha=.8)
     g <- g + coord_cartesian(xlim=c(lower.x, upper.x), ylim=c(lower.y, upper.y))
+    g <- g + geom_text(data=tlabel.pos[tlabel.pos$ident %in% curCluster,],aes(x=X, y=Y, label=ident), color="black")
     g <- g + theme_bw() + theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
     g <- g + theme(legend.justification=c(0,0), legend.title=element_blank(), legend.text=element_text(size=12))
     g <- g + theme(axis.text=element_text(size=15), axis.title=element_text(size=16,face="bold"))
